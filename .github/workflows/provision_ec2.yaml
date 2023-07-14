@@ -7,7 +7,6 @@ on:
         required: true
         default: 'terraform-githubactions'
         type: string
-      e
 jobs:
   provision-ec2:
     runs-on: ubuntu-latest
