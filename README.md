@@ -137,4 +137,61 @@ Após criar a Infra só brincar com sua instancia iniciada na AWS :)
 
 ## Github Actions
 
-**EM DESENVOLVIMENTO**
+Abaixo segue a etapa de criação do Actions do Github.
+
+Primeira etapa dentro do repositório do git, entre em configurações e procure no menu `Actions`, neste local você deve adicionar o `TF_USER_AWS_KEY` e `TF_USER_AWS_SECRET`.
+
+Segunda etapa é criar uma pasta com o nome `.github/workflows`, após isso criar o arquivo `yaml` com o nome que deseja, aqui sendo `provision_ec2.yml`
+
+Criado o arquivo vamos desenvolver o action.
+
+```yaml
+name: Provision EC2
+on:
+  workflow_dispatch:
+    inputs:
+      ec2-name:
+        description: EC2 name
+        required: true
+        default: 'terraform-githubactions'
+        type: string
+```
+Nesta primeira etapa é estrutura o nome do Action e qual a forma de ser executado, este sendo manual e adicionado uma variável com o nome `ec2-name` que é a váriavel string que se encontra dentro do arquivo `main.tf`, o valor dessa variável é o que está no atributo `default`.
+
+Após essa etapa é criado os jobs que serão as ações no action.
+
+```yaml
+jobs:
+  provision-ec2:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '14'
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: '${{ secrets.TF_USER_AWS_KEY }}'
+          aws-secret-access-key: '${{ secrets.TF_USER_AWS_SECRET }}'
+          aws-region: us-east-2
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_wrapper: false
+      - name: Terraform Apply
+        id:   apply
+        env:
+          TF_VAR_ec2_name:  "${{ github.event.inputs.ec2-name }}"
+        run: |
+          terraform init
+          terraform validate
+          terraform plan 
+          terraform apply -auto-approve
+```
+
+Dentro do `step` primeiro é realizado o checkout do repositorio no action e configuração da versão 14 do node. Após essa configuração inicial é usado o action `aws-actions/configure-aws-credentials@v1` que é adicionado as informações de ACCESS KEY e ACCESS SECRET KEY que são os mesmos que estão no `provider.tf`.
+
+Após ter adicionado as credenciais da AWS é feito a instalação do terraform e posteriormente na parte de `run` executado localmente no tutorial, `init`, `validate`, `plan`e `apply`.
+
+**LEMBRETE**: É importante evitar de subir o arquivo `provider.tf` sendo esse com informações importantes de acesso, adicione esse arquivo no `.gitigone`.
